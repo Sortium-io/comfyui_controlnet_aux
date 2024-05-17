@@ -2,6 +2,7 @@
 import logging
 import re
 import os
+import sys
 
 base_log_level = logging.INFO
 
@@ -38,19 +39,26 @@ class Formatter(logging.Formatter):
 
 
 def mklog(name, level=base_log_level):
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger = logging.getLogger()
 
-    for handler in logger.handlers:
-        logger.removeHandler(handler)
+    if not logger.handlers:
+        logging_level = logging.INFO
 
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    ch.setFormatter(Formatter())
-    logger.addHandler(ch)
+        logger.setLevel(logging_level)
 
-    # Disable log propagation
-    logger.propagate = False
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging.INFO)
+        stdout_handler.addFilter(lambda record: record.levelno <= logging.WARNING)
+
+        stderr_handler = logging.StreamHandler(sys.stderr)
+        stderr_handler.setLevel(logging.ERROR)
+
+        formatter = logging.Formatter('%(message)s')
+        stdout_handler.setFormatter(formatter)
+        stderr_handler.setFormatter(formatter)
+
+        logger.addHandler(stdout_handler)
+        logger.addHandler(stderr_handler)
 
     return logger
 
